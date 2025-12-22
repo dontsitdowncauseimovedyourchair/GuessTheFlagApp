@@ -10,8 +10,10 @@ import SwiftUI
 struct ContentView: View {
     
     @State private var showingScore: Bool = false
+    @State private var showingResults: Bool = false
     @State private var score: Int = 0
     @State private var clickedFlag: String = ""
+    @State private var round: Int = 0
     
     @State private var alertMessage: String = ""
     
@@ -87,6 +89,11 @@ struct ContentView: View {
         } message: {
             Text(!clickedFlag.isEmpty ? "That's the \(clickedFlag) flag" : "")
         }
+        .alert("Final score is: \(score)", isPresented: $showingResults) {
+            Button("New Game") {
+                resetGame()
+            }
+        }
         .ignoresSafeArea()
     }
     
@@ -100,12 +107,24 @@ struct ContentView: View {
             alertMessage = "You're Mr. Flop"
             clickedFlag = countries[number]
         }
+        round += 1
+        
         showingScore = true
     }
     
     func updateGame() {
+        if (round >= 8) {
+            showingResults = true;
+            return //I added this return to help the user feel the game reset after they clicked "New Game", which calls the resetGame function
+        }
         countries.shuffle()
         correctAnswer = Int.random(in: 0..<3)
+    }
+    
+    func resetGame() {
+        score = 0
+        round = 0
+        updateGame()
     }
 }
 
