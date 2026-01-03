@@ -7,12 +7,39 @@
 
 import SwiftUI
 
+struct FlagImage : View {
+    let image: String
+    var body: some View {
+        Image(image)
+            .shadow(radius: 10)
+            .clipShape(.capsule)
+    }
+    
+    init(_ image: String) {
+        self.image = image
+    }
+}
+
+struct JapanGradient : View {
+    let center: UnitPoint
+    
+    var body: some View {
+        RadialGradient(stops: [
+            .init(color: .red, location: 0.3),
+            .init(color: .white, location: 0.3),
+            .init(color: Color(red: 0.9, green: 0.9, blue: 0.9), location: 1)
+        ], center: center, startRadius: 260, endRadius: 270)
+    }
+    
+    
+}
+
 struct ContentView: View {
     
     @State private var showingScore: Bool = false
     @State private var showingResults: Bool = false
     @State private var score: Int = 0
-    @State private var clickedFlag: String = ""
+    @State private var clickedFlag: Int = -1
     @State private var round: Int = 0
     
     @State private var alertMessage: String = ""
@@ -24,16 +51,8 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                RadialGradient(stops: [
-                    .init(color: .red, location: 0.3),
-                    .init(color: .white, location: 0.3),
-                    .init(color: Color(red: 0.9, green: 0.9, blue: 0.9), location: 1)
-                ], center: .top, startRadius: 260, endRadius: 270)
-                RadialGradient(stops: [
-                    .init(color: .red, location: 0.3),
-                    .init(color: .white, location: 0.3),
-                    .init(color: Color(red: 0.9, green: 0.9, blue: 0.9), location: 1)
-                ], center: .bottom, startRadius: 260, endRadius: 270)
+                JapanGradient(center: .top)
+                JapanGradient(center: .bottom)
             }
             
             VStack {
@@ -52,18 +71,23 @@ struct ContentView: View {
                             .font(.headline .weight(.medium))
                         Text("\(countries[correctAnswer])")
                             .font(.largeTitle .weight(.semibold))
+                            .animation(.default, value: correctAnswer)
                     }
                     .foregroundStyle(.white)
                     .shadow(radius: 10)
+                    
                     VStack(spacing: 30) {
                         ForEach(0..<3) { number in
                             Button {
                                 flagTapped(for: number)
                             } label: {
-                                Image(countries[number])
+                                FlagImage(countries[number])
                             }
-                            .shadow(radius: 10)
-                            .clipShape(.capsule)
+                            .rotation3DEffect(.degrees(clickedFlag == number ? 360 : 0), axis: (x: 0, y: 1, z: 0))
+                            .opacity(clickedFlag == -1 || clickedFlag == number ? 1 : 0.25)
+                            .scaleEffect(clickedFlag == -1 || clickedFlag == number ? 1 : 0.75)
+                            .saturation(clickedFlag == -1 || clickedFlag == number ? 1 : 0)
+                            .animation(.easeInOut, value: clickedFlag)
                         }
                     }
                 }
@@ -87,7 +111,7 @@ struct ContentView: View {
                 updateGame()
             }
         } message: {
-            Text(!clickedFlag.isEmpty ? "That's the \(clickedFlag) flag" : "")
+            Text(clickedFlag != correctAnswer ? "That's the \(countries[clickedFlag == -1 ? 0 : clickedFlag]) flag" : "")
         }
         .alert("Final score is: \(score)", isPresented: $showingResults) {
             Button("New Game") {
@@ -95,17 +119,21 @@ struct ContentView: View {
             }
         }
         .ignoresSafeArea()
+        .onAppear {
+            resetGame()
+        }
     }
     
     func flagTapped(for number: Int) {
+        
+        clickedFlag = number
+        
         if (number == correctAnswer) {
             score += 1
             alertMessage = "You're right!!!"
-            clickedFlag = ""
         } else {
             score -= 1
             alertMessage = "You're Mr. Flop"
-            clickedFlag = countries[number]
         }
         round += 1
         
@@ -119,6 +147,8 @@ struct ContentView: View {
         }
         countries.shuffle()
         correctAnswer = Int.random(in: 0..<3)
+        
+        clickedFlag = -1
     }
     
     func resetGame() {
